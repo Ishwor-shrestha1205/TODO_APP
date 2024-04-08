@@ -23,50 +23,49 @@ class TodoListScreen extends StatefulWidget {
 class _TodoListScreenState extends State<TodoListScreen> {
   final List<Todo> _todos = [];
 
-  void _addTodoItem(String title) {
-    setState(() {
-      _todos.add(Todo(title: title));
-    });
-  }
+  void _addOrEditTodoItem({required bool isEditing, String title = '', required int index}) {
+    TextEditingController _textFieldController = TextEditingController(text: title);
 
-  void _toggleTodo(Todo todo, bool isChecked) {
-    setState(() {
-      todo.isDone = isChecked;
-    });
-  }
-
-  void _showAddTodoDialog() {
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      final TextEditingController _textFieldController = TextEditingController();
-      return AlertDialog(
-        title: Text('Add a new todo'),
-        content: TextField(
-          controller: _textFieldController,
-          decoration: InputDecoration(hintText: "Enter todo title"),
-        ),
-        actions: <Widget>[
-          TextButton(
-            child: Text('CANCEL'),
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(isEditing ? 'Edit todo' : 'Add a new todo'),
+          content: TextField(
+            controller: _textFieldController,
+            decoration: InputDecoration(hintText: "Enter todo title"),
           ),
-          TextButton(
-            child: Text('ADD'),
-            onPressed: () {
-              if (_textFieldController.text.isNotEmpty) {
-                _addTodoItem(_textFieldController.text);
+          actions: <Widget>[
+            TextButton(
+              child: Text('CANCEL'),
+              onPressed: () {
                 Navigator.of(context).pop();
-              }
-            },
-          ),
-        ],
-      );
-    },
-  );
-}
+              },
+            ),
+            TextButton(
+              child: Text(isEditing ? 'UPDATE' : 'ADD'),
+              onPressed: () {
+                setState(() {
+                  if (isEditing) {
+                    _todos[index].title = _textFieldController.text;
+                  } else {
+                    _todos.add(Todo(title: _textFieldController.text));
+                  }
+                });
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _deleteTodoItem(int index) {
+    setState(() {
+      _todos.removeAt(index);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -80,15 +79,30 @@ class _TodoListScreenState extends State<TodoListScreen> {
             leading: Checkbox(
               value: _todos[index].isDone,
               onChanged: (bool? value) {
-                _toggleTodo(_todos[index], value!);
+                setState(() {
+                  _todos[index].isDone = value!;
+                });
               },
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                IconButton(
+                  icon: Icon(Icons.edit),
+                  onPressed: () => _addOrEditTodoItem(isEditing: true, title: _todos[index].title, index: index),
+                ),
+                IconButton(
+                  icon: Icon(Icons.delete),
+                  onPressed: () => _deleteTodoItem(index),
+                ),
+              ],
             ),
           );
         },
       ),
       floatingActionButton: FloatingActionButton(
         child: Icon(Icons.add),
-        onPressed: _showAddTodoDialog,
+        onPressed: () => _addOrEditTodoItem(isEditing: false, index: -1), // -1 indicates adding a new item
       ),
     );
   }
